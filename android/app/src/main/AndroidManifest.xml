@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
     <application
         android:label="precision_vision"
         android:name="${applicationName}"
@@ -42,4 +43,10 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
+  <uses-feature
+    android:name="android.hardware.camera"
+    android:required="true"/>
+
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.FLASHLIGHT"/>Ï
 </manifest>
