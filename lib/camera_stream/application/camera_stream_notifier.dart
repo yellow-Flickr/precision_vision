@@ -43,6 +43,9 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
 
       await _initializeCameraController(_cameras[_selectedCameraIdx]);
 
+      // Ensure the currently selected detector (from settings) is loaded
+      await ref.read(modelOrchestratorProvider).load();
+
       // Start the stream and wire to current detector (fresh read on each frame)
       await state.controller!.startImageStream((CameraImage frame) async {
         final detections = await ref
@@ -102,6 +105,8 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
     state = state.copyWith(isInitialized: false, detections: [], fps: 0);
 
     await _initializeCameraController(_cameras[_selectedCameraIdx]);
+
+    await ref.read(modelOrchestratorProvider).load();
 
     await state.controller!.startImageStream((CameraImage frame) async {
       final detections = await ref

@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:precision_vision/common/theme/app_typography.dart';
+import 'package:precision_vision/settings/providers.dart';
 
-class ModelSettingsScreen extends StatelessWidget {
+class ModelSettingsScreen extends ConsumerWidget {
   const ModelSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final currentDetector = ref.watch(modelOrchestratorProvider);
+    final notifier = ref.read(modelOrchestratorProvider.notifier);
+
+    // Current model identifier (logic lives in the notifier so UI doesn't import detector classes)
+    final currentModel = notifier.currentModel;
+
+    final isYoloActive = currentModel == 'YOLOv8';
+    final isMobileNetActive = currentModel == 'MobileNet';
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -29,7 +40,8 @@ class ModelSettingsScreen extends StatelessWidget {
               icon: Icons.speed,
               title: 'YOLOv8 (Fast)',
               subtitle: 'Optimized for real-time mobile tracking',
-              isLoaded: true,
+              isLoaded: isYoloActive,
+              onLoad: isYoloActive ? null : notifier.changeToYoloV8,
               colorScheme: cs,
             ),
             const SizedBox(height: 12),
@@ -37,7 +49,8 @@ class ModelSettingsScreen extends StatelessWidget {
               icon: Icons.light_mode,
               title: 'MobileNet v3 (Ultra Light)',
               subtitle: 'Minimal battery drain performance',
-              isLoaded: false,
+              isLoaded: isMobileNetActive,
+              onLoad: isMobileNetActive ? null : notifier.changeToMobileNet,
               colorScheme: cs,
             ),
             const SizedBox(height: 12),
@@ -46,6 +59,7 @@ class ModelSettingsScreen extends StatelessWidget {
               title: 'EfficientDet (High Accuracy)',
               subtitle: 'Maximum precision for static objects',
               isLoaded: false,
+              onLoad: null, // Not implemented yet
               colorScheme: cs,
             ),
 
@@ -65,9 +79,7 @@ class ModelSettingsScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHigh.withAlpha(100),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: cs.outlineVariant.withAlpha(25),
-                ),
+                border: Border.all(color: cs.outlineVariant.withAlpha(25)),
               ),
               child: Column(
                 children: [
@@ -82,17 +94,15 @@ class ModelSettingsScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '0.50',
-                        style: PVTypography.dataLg.copyWith(
-                          color: cs.primary,
-                        ),
+                        currentDetector.confidenceThreshold.toStringAsFixed(2),
+                        style: PVTypography.dataLg.copyWith(color: cs.primary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Slider(
-                    value: 0.5,
-                    onChanged: (_) {},
+                    value: currentDetector.confidenceThreshold,
+                    onChanged: notifier.adjustConfidenceThreshold,
                     min: 0,
                     max: 1,
                     divisions: 100,
@@ -100,12 +110,18 @@ class ModelSettingsScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('0.00',
-                          style: PVTypography.dataSm
-                              .copyWith(color: cs.onSurfaceVariant)),
-                      Text('1.00',
-                          style: PVTypography.dataSm
-                              .copyWith(color: cs.onSurfaceVariant)),
+                      Text(
+                        '0.00',
+                        style: PVTypography.dataSm.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        '1.00',
+                        style: PVTypography.dataSm.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
 
@@ -144,6 +160,7 @@ class _ModelCard extends StatelessWidget {
   final String subtitle;
   final bool isLoaded;
   final ColorScheme colorScheme;
+  final VoidCallback? onLoad;
 
   const _ModelCard({
     required this.icon,
@@ -151,6 +168,7 @@ class _ModelCard extends StatelessWidget {
     required this.subtitle,
     required this.isLoaded,
     required this.colorScheme,
+    this.onLoad,
   });
 
   @override
@@ -173,15 +191,17 @@ class _ModelCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                color: isLoaded
-                    ? colorScheme.primary.withAlpha(50)
-                    : colorScheme.surfaceContainerHighest.withAlpha(130),
+              color: isLoaded
+                  ? colorScheme.primary.withAlpha(50)
+                  : colorScheme.surfaceContainerHighest.withAlpha(130),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon,
-                color: isLoaded
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant),
+            child: Icon(
+              icon,
+              color: isLoaded
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -191,7 +211,9 @@ class _ModelCard extends StatelessWidget {
                 Text(
                   title,
                   style: PVTypography.headlineSm.copyWith(
-                    color: isLoaded ? colorScheme.primary : colorScheme.onSurface,
+                    color: isLoaded
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                     height: 1.1,
                   ),
                 ),
@@ -208,7 +230,11 @@ class _ModelCard extends StatelessWidget {
           if (isLoaded)
             Row(
               children: [
-                Icon(Icons.check_circle, color: colorScheme.secondary, size: 20),
+                Icon(
+                  Icons.check_circle,
+                  color: colorScheme.secondary,
+                  size: 20,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Loaded',
@@ -218,21 +244,29 @@ class _ModelCard extends StatelessWidget {
                 ),
               ],
             )
-          else
+          else if (onLoad != null)
             TextButton(
-              onPressed: () {},
+              onPressed: onLoad,
               style: TextButton.styleFrom(
-                backgroundColor: colorScheme.surfaceContainerHighest.withAlpha(130),
+                backgroundColor: colorScheme.surfaceContainerHighest.withAlpha(
+                  130,
+                ),
                 foregroundColor: colorScheme.onSurface,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: Text(
-                'Load',
-                style: PVTypography.labelCaps,
+              child: Text('Load', style: PVTypography.labelCaps),
+            )
+          else
+            Text(
+              'Soon',
+              style: PVTypography.labelCaps.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
         ],
@@ -263,14 +297,13 @@ class _ToggleRow extends StatelessWidget {
           children: [
             Icon(icon, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
-            Text(label,
-                style: PVTypography.bodyMd.copyWith(color: colorScheme.onSurface)),
+            Text(
+              label,
+              style: PVTypography.bodyMd.copyWith(color: colorScheme.onSurface),
+            ),
           ],
         ),
-        Switch(
-          value: value,
-          onChanged: (_) {},
-        ),
+        Switch(value: value, onChanged: (_) {}),
       ],
     );
   }

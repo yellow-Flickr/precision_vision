@@ -8,34 +8,21 @@ import 'package:precision_vision/common/widgets/pv_bounding_box.dart'
 import 'package:image/image.dart' as img;
 import 'package:precision_vision/settings/data/detector.dart';
 
-// ─── Data class for a single detection ───────────────────────────────────────
-// class PVDetection {
-//   final Rect boundingBox; // normalized 0.0–1.0
-//   final String label;
-//   final double confidence;
-
-//   PVDetection({
-//     required this.boundingBox,
-//     required this.label,
-//     required this.confidence,
-//   });
-// }
-
 // ─── Main Detector Class ──────────────────────────────────────────────────────
 class MobileNetDetector extends Detector {
-  static const int inputSize = 300; // YOLOv8n default input
+  static const int inputSize = 300; // mobilenet default input
   static const double iouThreshold = 0.5;
 
   late Interpreter _interpreter;
   late IsolateInterpreter _isolateInterpreter;
   late List<String> _labels;
-  bool _isProcessing = false;
+  bool _loaded = false;
 
-  // Call this once during app init
+  // Call this once during app init. Safe to call multiple times.
   @override
   Future<void> load() async {
+    if (_loaded) return;
     _interpreter = await Interpreter.fromAsset('assets/1.tflite');
-    // _interpreter = await Interpreter.fromAsset('assets/tflite_model.tflite');
 
     _interpreter.allocateTensors();
     _isolateInterpreter = await IsolateInterpreter.create(
@@ -44,6 +31,7 @@ class MobileNetDetector extends Detector {
     // Load COCO labels — one per line in assets/labels.txt
     final labelData = await rootBundle.loadString('assets/labels.txt');
     _labels = labelData.trim().split('\n');
+    _loaded = true;
   }
 
   // ─── STAGE 1: Camera stream callback ───────────────────────────────────────
@@ -383,57 +371,10 @@ class MobileNetDetector extends Detector {
   }
 
   void dispose() {
-    _interpreter.close();
-    _isolateInterpreter.close();
+    if (_loaded) {
+      _interpreter.close();
+      _isolateInterpreter.close();
+    }
+    _loaded = false;
   }
 }
-
-
-
-
-
-// import 'dart:isolate';
-// import 'package:camera/camera.dart';
-// import 'package:precision_vision/camera_stream/application/yolo_inference_worker.dart';
-// import 'package:precision_vision/common/widgets/pv_bounding_box.dart';
-// class YoloDetector {
-//   Isolate? _isolate;
-//   SendPort? _sendPort;
-//   bool _isProcessing = false;
-//   /// Call once during app initialization
-//   Future<void> load() async {
-//     final receivePort = ReceivePort();
-//     _isolate = await Isolate.spawn(
-//       yoloInferenceEntry,
-//       receivePort.sendPort,
-//       debugName: 'YoloWorker',
-//     );
-//     _sendPort = await receivePort.first as SendPort;
-//   }
-//   /// Call from camera stream: controller.startImageStream(detector.onFrame)
-//   Future<List<PVDetection>> onFrame(CameraImage frame) async {
-//     if (_isProcessing || _sendPort == null) return [];
-//     _isProcessing = true;
-//     try {
-//       final response = ReceivePort();
-//       final request = InferenceRequest(
-//         width: frame.width,
-//         height: frame.height,
-//         formatGroup: frame.format.group == ImageFormatGroup.yuv420 ? 0 : 1,
-//         planes: frame.planes.map((p) => p.bytes).toList(),
-//         bytesPerRow: frame.planes.map((p) => p.bytesPerRow).toList(),
-//         replyPort: response.sendPort,
-//       );
-//       _sendPort!.send(request);
-//       final result = await response.first as List<PVDetection>;
-//       return result;
-//     } finally {
-//       _isProcessing = false;
-//     }
-//   }
-//   void dispose() {
-//     _isolate?.kill(priority: Isolate.immediate);
-//     _isolate = null;
-//     _sendPort = null;
-//   }
-// }

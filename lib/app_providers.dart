@@ -3,7 +3,10 @@
 
 
 export 'package:precision_vision/settings/providers.dart'
-    show modelOrchestratorProvider, mobileNetDetectorProvider;
+    show
+        modelOrchestratorProvider,
+        mobileNetDetectorProvider,
+        yoloV8DetectorProvider;
 
 export 'package:precision_vision/camera_stream/providers.dart'
     show
