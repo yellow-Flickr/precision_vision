@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:precision_vision/camera_stream/application/mobile_net_detector.dart';
+import 'package:precision_vision/settings/data/mobile_net_detector.dart';
 import 'package:precision_vision/common/widgets/pv_bounding_box.dart'
     show PVDetection;
 

@@ -1,12 +1,12 @@
 import 'dart:developer';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart' show Float32List;
 import 'package:flutter/services.dart';
 import 'package:flutter_litert/flutter_litert.dart';
 import 'package:precision_vision/common/widgets/pv_bounding_box.dart'
     show PVDetection;
 import 'package:image/image.dart' as img;
+import 'package:precision_vision/settings/data/detector.dart';
 
 // ─── Data class for a single detection ───────────────────────────────────────
 // class PVDetection {
@@ -22,9 +22,8 @@ import 'package:image/image.dart' as img;
 // }
 
 // ─── Main Detector Class ──────────────────────────────────────────────────────
-class MobileNetDetector {
+class MobileNetDetector extends Detector {
   static const int inputSize = 300; // YOLOv8n default input
-  static const double confidenceThreshold = 0.4;
   static const double iouThreshold = 0.5;
 
   late Interpreter _interpreter;
@@ -33,10 +32,10 @@ class MobileNetDetector {
   bool _isProcessing = false;
 
   // Call this once during app init
+  @override
   Future<void> load() async {
     _interpreter = await Interpreter.fromAsset('assets/1.tflite');
     // _interpreter = await Interpreter.fromAsset('assets/tflite_model.tflite');
-
 
     _interpreter.allocateTensors();
     _isolateInterpreter = await IsolateInterpreter.create(
@@ -49,6 +48,7 @@ class MobileNetDetector {
 
   // ─── STAGE 1: Camera stream callback ───────────────────────────────────────
   // Wire this to: controller.startImageStream(detector.onFrame)
+  @override
   Future<List<PVDetection>> onFrame(CameraImage frame) async {
     // if (_isProcessing) return []; // drop frame if busy
     // _isProcessing = true;
