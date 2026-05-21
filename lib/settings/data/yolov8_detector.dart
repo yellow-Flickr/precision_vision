@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_litert/flutter_litert.dart';
 import 'package:image/image.dart' as img;
+
 import 'package:precision_vision/common/widgets/pv_bounding_box.dart';
 import 'package:precision_vision/settings/data/detector.dart';
 
@@ -16,6 +17,10 @@ class Yolov8Detector extends Detector {
   late IsolateInterpreter _isolateInterpreter;
   late List<String> _labels;
   bool _loaded = false;
+  @override
+  double confidenceThreshold;
+
+  Yolov8Detector({this.confidenceThreshold = 0.4});
 
   // Call this once during app init. Safe to call multiple times.
   @override
@@ -36,12 +41,18 @@ class Yolov8Detector extends Detector {
   // ─── STAGE 1: Camera stream callback ───────────────────────────────────────
   // Wire this to: controller.startImageStream(detector.onFrame)
   @override
-  Future<List<PVDetection>> onFrame(CameraImage frame) async {
+  Future<List<PVDetection>> onFrame(
+    CameraImage frame, {
+    double confidenceThreshold = .4,
+  }) async {
     // if (_isProcessing) return []; // drop frame if busy
     // _isProcessing = true;
     try {
       final input = _preprocess(frame);
-      final detections = await _runInference(input);
+      final detections = await _runInference(
+        input,
+        confidenceThreshold: confidenceThreshold,
+      );
       return detections;
     } catch (e, s) {
       log('Inference Error: ${e.toString()}', stackTrace: s);
@@ -165,8 +176,9 @@ class Yolov8Detector extends Detector {
   //   84 = 4 (cx, cy, w, h) + 80 COCO class scores
   //   8400 = number of predictions
   Future<List<PVDetection>> _runInference(
-    List<List<List<List<double>>>> input,
-  ) async {
+    List<List<List<List<double>>>> input, {
+    double confidenceThreshold = .4,
+  }) async {
     // Prepare output buffer for [1, 84, 8400]
     final output = List.generate(
       1,
@@ -177,14 +189,17 @@ class Yolov8Detector extends Detector {
       await _isolateInterpreter.runForMultipleInputs([input], {0: output});
 
       // The YOLO-specific parser that correctly handles [84, 8400] layout
-      return _parseOutput(output[0]);
+      return _parseOutput(output[0], confidenceThreshold: confidenceThreshold);
     } catch (e, s) {
       log('YOLOv8 inference error: $e', stackTrace: s);
       rethrow;
     }
   }
 
-  List<PVDetection> _parseOutput(List<List<double>> raw) {
+  List<PVDetection> _parseOutput(
+    List<List<double>> raw, {
+    double confidenceThreshold = 0.4,
+  }) {
     final int numDetections = raw[0].length; // 8400
     final List<PVDetection> results = [];
 
@@ -260,6 +275,13 @@ class Yolov8Detector extends Detector {
     }
     _loaded = false;
   }
+
+  // @override
+  // Yolov8Detector copyWith({double? confidenceThreshold}) {
+  //   return Yolov8Detector(
+  //     confidenceThreshold: confidenceThreshold ?? this.confidenceThreshold,
+  //   );
+  // }
 }
 
 // import 'dart:isolate';

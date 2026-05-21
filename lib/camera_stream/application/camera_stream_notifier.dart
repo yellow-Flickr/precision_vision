@@ -18,12 +18,12 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
     // Watch the current detector from the settings module.
     // When the user switches models in settings, this will rebuild the notifier
     // (future enhancement: react to model swaps while streaming).
-    ref.watch(modelOrchestratorProvider);
+    // ref.watch(modelOrchestratorProvider);
 
-    // Ensure we dispose the camera when this provider is disposed.
-    ref.onDispose(() {
-      _stopStreamAndDispose();
-    });
+    // // Ensure we dispose the camera when this provider is disposed.
+    // ref.onDispose(() {
+    //   _stopStreamAndDispose();
+    // });
 
     // We don't auto-initialize here (side effects in build are bad).
     // Initialization is triggered explicitly from the UI.
@@ -44,27 +44,28 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
       await _initializeCameraController(_cameras[_selectedCameraIdx]);
 
       // Ensure the currently selected detector (from settings) is loaded
-      await ref.read(modelOrchestratorProvider).load();
+      await ref.read(modelOrchestratorProvider).detector.load().then((_) async {
+        // Start the stream and wire to current detector (fresh read on each frame)
+        await state.controller!.startImageStream((CameraImage frame) async {
+          final activeModel = ref.read(modelOrchestratorProvider);
+          final detections = await activeModel.detector.onFrame(
+            frame,
+            confidenceThreshold: activeModel.confidenceThreshold,
+          );
 
-      // Start the stream and wire to current detector (fresh read on each frame)
-      await state.controller!.startImageStream((CameraImage frame) async {
-        final detections = await ref
-            .read(modelOrchestratorProvider)
-            .onFrame(frame);
+          final now = DateTime.now();
+          final elapsed = now.difference(_lastFrameTime).inMilliseconds;
+          _lastFrameTime = now;
 
-        final now = DateTime.now();
-        final elapsed = now.difference(_lastFrameTime).inMilliseconds;
-        _lastFrameTime = now;
+          if (!ref.mounted) return;
 
-        if (!ref.mounted) return;
-
-        state = state.copyWith(
-          detections: detections,
-          fps: elapsed > 0 ? 1000 / elapsed : 0,
-        );
+          state = state.copyWith(
+            detections: detections,
+            fps: elapsed > 0 ? 1000 / elapsed : 0,
+          );
+        });
+        state = state.copyWith(isInitialized: true);
       });
-
-      state = state.copyWith(isInitialized: true);
     } catch (e, s) {
       log('CameraStreamNotifier initialize error', error: e, stackTrace: s);
       state = state.copyWith(error: e.toString());
@@ -98,7 +99,7 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
   Future<void> switchCamera() async {
     if (_cameras.length < 2 || state.controller == null) return;
 
-    await _stopStreamAndDispose();
+    await stopStreamAndDispose();
 
     _selectedCameraIdx = (_selectedCameraIdx + 1) % _cameras.length;
 
@@ -106,26 +107,28 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
 
     await _initializeCameraController(_cameras[_selectedCameraIdx]);
 
-    await ref.read(modelOrchestratorProvider).load();
+    await ref.read(modelOrchestratorProvider).detector.load().then((_) async {
+       await state.controller!.startImageStream((CameraImage frame) async {
+         final activeModel = ref.read(modelOrchestratorProvider);
+         final detections = await activeModel.detector.onFrame(
+           frame,
+           confidenceThreshold: activeModel.confidenceThreshold,
+         );
 
-    await state.controller!.startImageStream((CameraImage frame) async {
-      final detections = await ref
-          .read(modelOrchestratorProvider)
-          .onFrame(frame);
+        final now = DateTime.now();
+        final elapsed = now.difference(_lastFrameTime).inMilliseconds;
+        _lastFrameTime = now;
 
-      final now = DateTime.now();
-      final elapsed = now.difference(_lastFrameTime).inMilliseconds;
-      _lastFrameTime = now;
+        if (!ref.mounted) return;
 
-      if (!ref.mounted) return;
+        state = state.copyWith(
+          detections: detections,
+          fps: elapsed > 0 ? 1000 / elapsed : 0,
+        );
+      });
 
-      state = state.copyWith(
-        detections: detections,
-        fps: elapsed > 0 ? 1000 / elapsed : 0,
-      );
+      state = state.copyWith(isInitialized: true);
     });
-
-    state = state.copyWith(isInitialized: true);
   }
 
   Future<void> toggleFlash() async {
@@ -159,7 +162,7 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
     }
   }
 
-  Future<void> _stopStreamAndDispose() async {
+  Future<void> stopStreamAndDispose() async {
     final controller = state.controller;
     if (controller != null) {
       try {
@@ -167,7 +170,9 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
       } catch (_) {}
       await controller.dispose();
     }
-    state = const CameraStreamState();
+    // Note: We don't reset state here because the provider is being disposed.
+    // Setting state during disposal could cause issues with widgets that are
+    // still trying to access this provider.
   }
 
   FlashMode get currentFlashMode => _flashMode;

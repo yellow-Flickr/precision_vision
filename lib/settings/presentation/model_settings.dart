@@ -3,15 +3,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:precision_vision/common/theme/app_typography.dart';
 import 'package:precision_vision/settings/providers.dart';
 
-class ModelSettingsScreen extends ConsumerWidget {
+class ModelSettingsScreen extends ConsumerStatefulWidget {
   const ModelSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ModelSettingsScreen> createState() =>
+      _ModelSettingsScreenState();
+}
+
+class _ModelSettingsScreenState extends ConsumerState<ModelSettingsScreen> {
+  bool _isLoadingYolo = false;
+  bool _isLoadingMobileNet = false;
+
+  Future<void> _loadYolo() async {
+    setState(() => _isLoadingYolo = true);
+    try {
+      await ref.read(modelOrchestratorProvider.notifier).changeToYoloV8();
+    } finally {
+      if (mounted) setState(() => _isLoadingYolo = false);
+    }
+  }
+
+  Future<void> _loadMobileNet() async {
+    setState(() => _isLoadingMobileNet = true);
+    try {
+      await ref.read(modelOrchestratorProvider.notifier).changeToMobileNet();
+    } finally {
+      if (mounted) setState(() => _isLoadingMobileNet = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final currentDetector = ref.watch(modelOrchestratorProvider);
+    final activeModel = ref.watch(modelOrchestratorProvider);
+    final currentDetector = activeModel.detector;
     final notifier = ref.read(modelOrchestratorProvider.notifier);
 
     // Current model identifier (logic lives in the notifier so UI doesn't import detector classes)
@@ -19,7 +47,6 @@ class ModelSettingsScreen extends ConsumerWidget {
 
     final isYoloActive = currentModel == 'YOLOv8';
     final isMobileNetActive = currentModel == 'MobileNet';
-
     return Scaffold(
       backgroundColor: cs.surface,
       body: SingleChildScrollView(
@@ -41,7 +68,8 @@ class ModelSettingsScreen extends ConsumerWidget {
               title: 'YOLOv8 (Fast)',
               subtitle: 'Optimized for real-time mobile tracking',
               isLoaded: isYoloActive,
-              onLoad: isYoloActive ? null : notifier.changeToYoloV8,
+              isLoading: _isLoadingYolo,
+              onLoad: (isYoloActive || _isLoadingYolo) ? null : _loadYolo,
               colorScheme: cs,
             ),
             const SizedBox(height: 12),
@@ -50,7 +78,10 @@ class ModelSettingsScreen extends ConsumerWidget {
               title: 'MobileNet v3 (Ultra Light)',
               subtitle: 'Minimal battery drain performance',
               isLoaded: isMobileNetActive,
-              onLoad: isMobileNetActive ? null : notifier.changeToMobileNet,
+              isLoading: _isLoadingMobileNet,
+              onLoad: (isMobileNetActive || _isLoadingMobileNet)
+                  ? null
+                  : _loadMobileNet,
               colorScheme: cs,
             ),
             const SizedBox(height: 12),
@@ -93,20 +124,22 @@ class ModelSettingsScreen extends ConsumerWidget {
                           color: cs.onSurface,
                         ),
                       ),
-                      Text(
-                        currentDetector.confidenceThreshold.toStringAsFixed(2),
-                        style: PVTypography.dataLg.copyWith(color: cs.primary),
-                      ),
+                       Text(
+                         activeModel.confidenceThreshold.toStringAsFixed(2),
+                         style: PVTypography.dataLg.copyWith(color: cs.primary),
+                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Slider(
-                    value: currentDetector.confidenceThreshold,
-                    onChanged: notifier.adjustConfidenceThreshold,
-                    min: 0,
-                    max: 1,
-                    divisions: 100,
-                  ),
+                   Slider(
+                     value: activeModel.confidenceThreshold,
+                     onChanged: (value) {
+                       notifier.adjustConfidenceThreshold(value);
+                     },
+                     min: 0,
+                     max: 1,
+                     divisions: 50,
+                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -159,14 +192,16 @@ class _ModelCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isLoaded;
+  final bool isLoading;
   final ColorScheme colorScheme;
-  final VoidCallback? onLoad;
+  final Future<void> Function()? onLoad;
 
   const _ModelCard({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.isLoaded,
+    this.isLoading = false,
     required this.colorScheme,
     this.onLoad,
   });
@@ -246,7 +281,7 @@ class _ModelCard extends StatelessWidget {
             )
           else if (onLoad != null)
             TextButton(
-              onPressed: onLoad,
+              onPressed: isLoading ? null : onLoad,
               style: TextButton.styleFrom(
                 backgroundColor: colorScheme.surfaceContainerHighest.withAlpha(
                   130,
@@ -260,7 +295,16 @@ class _ModelCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: Text('Load', style: PVTypography.labelCaps),
+              child: isLoading
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: colorScheme.onSurface,
+                      ),
+                    )
+                  : Text('Load', style: PVTypography.labelCaps),
             )
           else
             Text(

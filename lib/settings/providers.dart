@@ -18,6 +18,7 @@ final yoloV8DetectorProvider = Provider<Detector>((ref) {
 });
 
 // Main orchestrator – holds the currently active detector and exposes controls
-final modelOrchestratorProvider = NotifierProvider<ModelOrchestrator, Detector>(
+final modelOrchestratorProvider = NotifierProvider<ModelOrchestrator, ActiveModel>(
   ModelOrchestrator.new,
 );
+// final confidenceThresholdProvider = StateProvider<double>((ref) => 0.4);

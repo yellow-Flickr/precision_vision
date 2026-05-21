@@ -1,6 +1,6 @@
 
 import 'package:camera/camera.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:precision_vision/camera_stream/application/camera_stream_notifier.dart';
 import 'package:precision_vision/camera_stream/domain/camera_stream_state.dart';
 import 'package:precision_vision/common/widgets/pv_bounding_box.dart';

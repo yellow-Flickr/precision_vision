@@ -18,6 +18,11 @@ class MobileNetDetector extends Detector {
   late List<String> _labels;
   bool _loaded = false;
 
+  @override
+  double confidenceThreshold;
+
+  MobileNetDetector({this.confidenceThreshold = 0.4});
+
   // Call this once during app init. Safe to call multiple times.
   @override
   Future<void> load() async {
@@ -37,12 +42,18 @@ class MobileNetDetector extends Detector {
   // ─── STAGE 1: Camera stream callback ───────────────────────────────────────
   // Wire this to: controller.startImageStream(detector.onFrame)
   @override
-  Future<List<PVDetection>> onFrame(CameraImage frame) async {
+  Future<List<PVDetection>> onFrame(
+    CameraImage frame, {
+    double confidenceThreshold = .4,
+  }) async {
     // if (_isProcessing) return []; // drop frame if busy
     // _isProcessing = true;
     try {
       final input = _preprocess(frame);
-      final detections = await _runInference(input);
+      final detections = await _runInference(
+        input,
+        confidenceThreshold: confidenceThreshold,
+      );
       return detections;
     } catch (e, s) {
       log('Inference Error: ${e.toString()}', stackTrace: s);
@@ -192,9 +203,10 @@ class MobileNetDetector extends Detector {
   //   84 = 4 (cx, cy, w, h) + 80 COCO class scores
   //   8400 = number of anchor predictions
   Future<List<PVDetection>> _runInference(
-    Uint8List input,
+    Uint8List input, {
     // List<List<List<List<double>>>> input,
-  ) async {
+    double confidenceThreshold = .4,
+  }) async {
     // Output buffer shape: [1][84][8400]
     // final outputShape = _interpreter.getOutputTensor(0).shape; // [1, 84, 8400]
     // log(
@@ -243,6 +255,7 @@ class MobileNetDetector extends Detector {
           rawClasses: outputBuffers[1] as List<List<double>>,
           rawScores: outputBuffers[2] as List<List<double>>,
           rawNumDetections: outputBuffers[3] as List<double>,
+          confidenceThreshold: confidenceThreshold,
         ),
       );
     } catch (e) {
@@ -258,6 +271,7 @@ class MobileNetDetector extends Detector {
     rawClasses, // outputBuffers[1] -> Shape: [1, 10]
     required List<List<double>> rawScores, // outputBuffers[2] -> Shape: [1, 10]
     required List<double> rawNumDetections, // outputBuffers[3] -> Shape: [1]
+    double confidenceThreshold = .4,
   }) {
     final List<PVDetection> results = [];
 
@@ -301,6 +315,12 @@ class MobileNetDetector extends Detector {
     return results;
   }
 
+  // @override
+  // MobileNetDetector copyWith({double? confidenceThreshold}) {
+  //   return MobileNetDetector(
+  //     confidenceThreshold: confidenceThreshold ?? this.confidenceThreshold,
+  //   );
+  // }
 
   void dispose() {
     if (_loaded) {

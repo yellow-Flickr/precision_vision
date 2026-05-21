@@ -4,6 +4,8 @@ import 'package:precision_vision/common/widgets/pv_bounding_box.dart'
 
 abstract class Detector {
   Future<void> load();
-  double confidenceThreshold =0.4;
-  Future<List<PVDetection>> onFrame(CameraImage frame);
+  abstract double confidenceThreshold;
+  Future<List<PVDetection>> onFrame(CameraImage frame,{double confidenceThreshold });
+
+  // Detector copyWith({double? confidenceThreshold});
 }

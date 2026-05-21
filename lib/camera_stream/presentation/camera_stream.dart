@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:precision_vision/camera_stream/providers.dart';
 import 'package:precision_vision/common/precision_vision.dart';
+import 'package:precision_vision/settings/providers.dart'
+    show modelOrchestratorProvider;
 
 class CameraStream extends ConsumerStatefulWidget {
   const CameraStream({super.key});
@@ -31,6 +33,7 @@ class _CameraStreamState extends ConsumerState<CameraStream>
   Widget build(BuildContext context) {
     final streamState = ref.watch(cameraStreamProvider);
     final controller = streamState.controller;
+    final notifier = ref.read(modelOrchestratorProvider.notifier);
 
     if (!streamState.isInitialized || controller == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -56,7 +59,7 @@ class _CameraStreamState extends ConsumerState<CameraStream>
             right: 16,
             child: PVTelemetryBar(
               fps: streamState.fps.toStringAsFixed(1),
-              modelId: 'MobileNet',
+              modelId: notifier.currentModel,
               latencyMs: '$latencyMs ms',
               isLive: true,
             ),
@@ -136,11 +139,11 @@ class _CameraStreamState extends ConsumerState<CameraStream>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // TODO: Hand off to CameraStreamNotifier for proper pause/resume handling
   }
-  
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Camera + detector disposal is handled by the Riverpod notifier
+    ref.read(cameraStreamProvider.notifier).stopStreamAndDispose();
     super.dispose();
   }
 
@@ -161,7 +164,6 @@ class _CameraStreamState extends ConsumerState<CameraStream>
       showInSnackBar('Picture saved: ${file.path}');
     }
   }
-
 
   void showInSnackBar(String message) {
     if (!mounted) return;
