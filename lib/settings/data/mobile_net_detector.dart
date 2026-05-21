@@ -251,48 +251,6 @@ class MobileNetDetector extends Detector {
     // return _parseOutput(outputBuffer[0]);
   }
 
-  List<PVDetection> _parseOutput(List<List<double>> raw) {
-    final int numDetections = raw[0].length; // 8400
-    final List<PVDetection> results = [];
-
-    for (int i = 0; i < numDetections; i++) {
-      // Box coords (center-x, center-y, width, height) — all normalized 0–1
-      final double cx = raw[0][i];
-      final double cy = raw[1][i];
-      final double w = raw[2][i];
-      final double h = raw[3][i];
-
-      // Class scores start at index 4
-      double bestScore = 0.0;
-      int bestClass = 0;
-      for (int c = 0; c < _labels.length; c++) {
-        final score = raw[4 + c][i];
-        if (score > bestScore) {
-          bestScore = score;
-          bestClass = c;
-        }
-      }
-
-      if (bestScore < confidenceThreshold) continue;
-
-      // Convert cx,cy,w,h → left,top,right,bottom
-      results.add(
-        PVDetection(
-          boundingBox: Rect.fromLTRB(
-            (cx - w / 2).clamp(0.0, 1.0),
-            (cy - h / 2).clamp(0.0, 1.0),
-            (cx + w / 2).clamp(0.0, 1.0),
-            (cy + h / 2).clamp(0.0, 1.0),
-          ),
-          label: _labels[bestClass],
-          confidence: bestScore,
-        ),
-      );
-    }
-
-    return _nonMaxSuppression(results);
-  }
-
   List<PVDetection> _parseMobileNetOutput({
     required List<List<List<double>>>
     rawBoxes, // outputBuffers[0] -> Shape: [1, 10, 4]
@@ -343,32 +301,6 @@ class MobileNetDetector extends Detector {
     return results;
   }
 
-  // Simple NMS — removes overlapping boxes for the same class
-  List<PVDetection> _nonMaxSuppression(List<PVDetection> detections) {
-    detections.sort((a, b) => b.confidence.compareTo(a.confidence));
-    final List<PVDetection> kept = [];
-
-    for (final det in detections) {
-      bool suppressed = false;
-      for (final keep in kept) {
-        if (keep.label == det.label &&
-            _iou(keep.boundingBox, det.boundingBox) > iouThreshold) {
-          suppressed = true;
-          break;
-        }
-      }
-      if (!suppressed) kept.add(det);
-    }
-    return kept;
-  }
-
-  double _iou(Rect a, Rect b) {
-    final intersection = a.intersect(b);
-    if (intersection.isEmpty) return 0.0;
-    final intersectArea = intersection.width * intersection.height;
-    final unionArea = a.width * a.height + b.width * b.height - intersectArea;
-    return intersectArea / unionArea;
-  }
 
   void dispose() {
     if (_loaded) {
