@@ -77,7 +77,7 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
   ) async {
     final controller = CameraController(
       description,
-      ResolutionPreset.medium,
+      ResolutionPreset.low,
       enableAudio: false,
       imageFormatGroup: ImageFormatGroup.yuv420,
     );
@@ -108,12 +108,12 @@ class CameraStreamNotifier extends Notifier<CameraStreamState> {
     await _initializeCameraController(_cameras[_selectedCameraIdx]);
 
     await ref.read(modelOrchestratorProvider).detector.load().then((_) async {
-       await state.controller!.startImageStream((CameraImage frame) async {
-         final activeModel = ref.read(modelOrchestratorProvider);
-         final detections = await activeModel.detector.onFrame(
-           frame,
-           confidenceThreshold: activeModel.confidenceThreshold,
-         );
+      await state.controller!.startImageStream((CameraImage frame) async {
+        final activeModel = ref.read(modelOrchestratorProvider);
+        final detections = await activeModel.detector.onFrame(
+          frame,
+          confidenceThreshold: activeModel.confidenceThreshold,
+        );
 
         final now = DateTime.now();
         final elapsed = now.difference(_lastFrameTime).inMilliseconds;
