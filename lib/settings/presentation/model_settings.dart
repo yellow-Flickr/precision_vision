@@ -36,7 +36,6 @@ class _ModelSettingsScreenState extends ConsumerState<ModelSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final activeModel = ref.watch(modelOrchestratorProvider);
     final currentDetector = activeModel.detector;
@@ -140,43 +139,24 @@ class _ModelSettingsScreenState extends ConsumerState<ModelSettingsScreen> {
                      max: 1,
                      divisions: 50,
                    ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '0.00',
-                        style: PVTypography.dataSm.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        '1.00',
-                        style: PVTypography.dataSm.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-                  Divider(color: cs.outlineVariant.withAlpha(50)),
-
-                  // Toggles
-                  const SizedBox(height: 16),
-                  _ToggleRow(
-                    icon: Icons.label,
-                    label: 'Show Labels',
-                    value: true,
-                    colorScheme: cs,
-                  ),
-                  const SizedBox(height: 16),
-                  _ToggleRow(
-                    icon: Icons.dark_mode,
-                    label: 'Dark Mode',
-                    value: isDark,
-                    colorScheme: cs,
-                  ),
-                ],
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       Text(
+                         '0.00',
+                         style: PVTypography.dataSm.copyWith(
+                           color: cs.onSurfaceVariant,
+                         ),
+                       ),
+                       Text(
+                         '1.00',
+                         style: PVTypography.dataSm.copyWith(
+                           color: cs.onSurfaceVariant,
+                         ),
+                       ),
+                     ],
+                   ),
+                 ],
               ),
             ),
             const SizedBox(height: 40),
@@ -319,36 +299,4 @@ class _ModelCard extends StatelessWidget {
   }
 }
 
-class _ToggleRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ColorScheme colorScheme;
 
-  const _ToggleRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: colorScheme.onSurfaceVariant),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: PVTypography.bodyMd.copyWith(color: colorScheme.onSurface),
-            ),
-          ],
-        ),
-        Switch(value: value, onChanged: (_) {}),
-      ],
-    );
-  }
-}

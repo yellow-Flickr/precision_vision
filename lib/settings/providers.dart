@@ -4,6 +4,20 @@ import 'package:precision_vision/settings/data/detector.dart';
 import 'package:precision_vision/settings/data/mobile_net_detector.dart';
 import 'package:precision_vision/settings/data/yolov8_detector.dart';
 
+// Theme provider for app-wide theme control
+enum ThemeModeOption { system, light, dark }
+
+class ThemeNotifier extends Notifier<ThemeModeOption> {
+  @override
+  ThemeModeOption build() => ThemeModeOption.system;
+
+  void setThemeMode(ThemeModeOption mode) => state = mode;
+}
+
+final themeProvider = NotifierProvider<ThemeNotifier, ThemeModeOption>(
+  ThemeNotifier.new,
+);
+
 // Default concrete detector implementation (kept alive while watched)
 final mobileNetDetectorProvider = Provider<Detector>((ref) {
   final detector = MobileNetDetector();

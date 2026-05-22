@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:precision_vision/common/theme/app_typography.dart';
+import 'package:precision_vision/settings/providers.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const AppShell({super.key, required this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final themeMode = ref.watch(themeProvider);
+
+    final iconData = switch (themeMode) {
+      ThemeModeOption.system => Icons.brightness_auto,
+      ThemeModeOption.light => Icons.light_mode,
+      ThemeModeOption.dark => Icons.dark_mode,
+    };
+
+    final tooltip = switch (themeMode) {
+      ThemeModeOption.system => 'Follow system theme',
+      ThemeModeOption.light => 'Light theme',
+      ThemeModeOption.dark => 'Dark theme',
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -28,9 +43,14 @@ class AppShell extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: Icon(iconData),
             color: cs.primary,
-            onPressed: () => context.go('/models'),
+            tooltip: tooltip,
+            onPressed: () {
+              final notifier = ref.read(themeProvider.notifier);
+              final next = ThemeModeOption.values[(themeMode.index + 1) % 3];
+              notifier.setThemeMode(next);
+            },
           ),
         ],
       ),
@@ -63,10 +83,10 @@ class AppShell extends StatelessWidget {
                 icon: Icon(Icons.model_training),
                 label: 'Models',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.grid_view),
-                label: 'Gallery',
-              ),
+              // BottomNavigationBarItem(
+              //   icon: Icon(Icons.grid_view),
+              //   label: 'Gallery',
+              // ),
             ],
           ),
         ),

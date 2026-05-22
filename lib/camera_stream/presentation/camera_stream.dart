@@ -66,70 +66,70 @@ class _CameraStreamState extends ConsumerState<CameraStream>
           ),
 
           // Detections count (top-left)
-          Positioned(
-            top: 48,
-            left: 16,
-            child: PVTelemetryChip(
-              label: 'Detections',
-              value:
-                  "${streamState.detections.length} object${streamState.detections.length == 1 ? '' : 's'}",
-            ),
-          ),
+          // Positioned(
+          //   top: 48,
+          //   left: 16,
+          //   child: PVTelemetryChip(
+          //     label: 'Detections',
+          //     value:
+          //         "${streamState.detections.length} object${streamState.detections.length == 1 ? '' : 's'}",
+          //   ),
+          // ),
 
           // Camera controls (flash + switch)
-          Positioned(
-            top: 40,
-            right: 16,
-            child: Column(
-              children: [
-                IconButton(
-                  icon: Icon(_getFlashIcon()),
-                  color: Colors.white,
-                  iconSize: 28,
-                  onPressed: () =>
-                      ref.read(cameraStreamProvider.notifier).toggleFlash(),
-                ),
-                const SizedBox(height: 8),
-                IconButton(
-                  icon: const Icon(Icons.flip_camera_ios),
-                  color: Colors.white,
-                  iconSize: 28,
-                  onPressed: () =>
-                      ref.read(cameraStreamProvider.notifier).switchCamera(),
-                ),
-              ],
-            ),
-          ),
+          // Positioned(
+          //   top: 40,
+          //   right: 16,
+          //   child: Column(
+          //     children: [
+          //       IconButton(
+          //         icon: Icon(_getFlashIcon()),
+          //         color: Colors.white,
+          //         iconSize: 28,
+          //         onPressed: () =>
+          //             ref.read(cameraStreamProvider.notifier).toggleFlash(),
+          //       ),
+          //       const SizedBox(height: 8),
+          //       IconButton(
+          //         icon: const Icon(Icons.flip_camera_ios),
+          //         color: Colors.white,
+          //         iconSize: 28,
+          //         onPressed: () =>
+          //             ref.read(cameraStreamProvider.notifier).switchCamera(),
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
-          // Capture button
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: _takePicture,
-                child: Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 54,
-                      height: 54,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          // // Capture button
+          // Positioned(
+          //   bottom: 40,
+          //   left: 0,
+          //   right: 0,
+          //   child: Center(
+          //     child: GestureDetector(
+          //       onTap: _takePicture,
+          //       child: Container(
+          //         width: 70,
+          //         height: 70,
+          //         decoration: BoxDecoration(
+          //           shape: BoxShape.circle,
+          //           border: Border.all(color: Colors.white, width: 4),
+          //         ),
+          //         child: Center(
+          //           child: Container(
+          //             width: 54,
+          //             height: 54,
+          //             decoration: const BoxDecoration(
+          //               color: Colors.white,
+          //               shape: BoxShape.circle,
+          //             ),
+          //           ),
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

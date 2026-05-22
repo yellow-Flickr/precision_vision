@@ -30,15 +30,15 @@ final GoRouter router = GoRouter(
             ),
           ],
         ),
-        // Gallery branch
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/gallery',
-              builder: (context, state) => const GalleryScreen(),
-            ),
-          ],
-        ),
+        // Gallery branch (commented out for now)
+        // StatefulShellBranch(
+        //   routes: [
+        //     GoRoute(
+        //       path: '/gallery',
+        //       builder: (context, state) => const GalleryScreen(),
+        //     ),
+        //   ],
+        // ),
       ],
     ),
   ],
