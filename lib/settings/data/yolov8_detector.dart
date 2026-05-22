@@ -26,14 +26,14 @@ class Yolov8Detector extends Detector {
   @override
   Future<void> load() async {
     if (_loaded) return;
-    _interpreter = await Interpreter.fromAsset('assets/tflite_model.tflite');
+    _interpreter = await Interpreter.fromAsset('assets/models/yolov8.tflite.tflite');
 
     _interpreter.allocateTensors();
     _isolateInterpreter = await IsolateInterpreter.create(
       address: _interpreter.address,
     );
     // Load COCO labels — one per line in assets/labels.txt
-    final labelData = await rootBundle.loadString('assets/labels.txt');
+    final labelData = await rootBundle.loadString('assets/labels/labels.txt');
     _labels = labelData.trim().split('\n');
     _loaded = true;
   }

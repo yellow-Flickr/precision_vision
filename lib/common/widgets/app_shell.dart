@@ -34,7 +34,7 @@ class AppShell extends ConsumerWidget {
           children: [
             Text(
               'PrecisionVision',
-              style: PVTypography.headlineMd.copyWith(
+              style: PVTypography.headlineSm.copyWith(
                 color: cs.primary,
                 fontWeight: FontWeight.w700,
               ),

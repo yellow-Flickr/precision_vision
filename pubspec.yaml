@@ -27,5 +27,9 @@ flutter:
 
   assets:
     - assets/
-    - assets/yolov8.tflite
-    - assets/labels.txt
+    - assets/models/
+    - assets/labels/
+    - assets/imgs/
+    - assets/imgs/launcher_icon.png
+    - assets/models/yolov8.tflite
+    - assets/labels/labels.txt
