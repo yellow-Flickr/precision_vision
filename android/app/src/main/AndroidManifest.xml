@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:label="precision_vision"
+        android:label="PrecisionVision"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

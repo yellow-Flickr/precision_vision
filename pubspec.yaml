@@ -1,5 +1,5 @@
 name: precision_vision
-description: "A new Flutter project."
+description: "Real-time on-device object detection powered by TensorFlow Lite (YOLOv8 & MobileNet)."
 publish_to: 'none'
 version: 0.1.0+1
 
